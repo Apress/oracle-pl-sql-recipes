@@ -1,0 +1,9 @@
+CREATE OR REPLACE PACKAGE synchronize_data IS  PROCEDURE driver;END;
+
+CREATE OR REPLACE PACKAGE BODY synchronize_data IS  error_flag BOOLEAN := FALSE;  PROCEDURE query_remote_data is     Cursor remote_db_query is     SELECT *     FROM my_remote_data@remote_db;        remote_db_rec employees%ROWTYPE;  BEGIN    OPEN remote_db_query;    LOOP      FETCH remote_db_query INTO remote_db_rec;
+      EXIT WHEN remote_db_query%NOTFOUND;    IF remote_db_query%NOTFOUND THEN      error_flag := TRUE;    ELSE      -- PERFORM PROCESSING
+      DBMS_OUTPUT.PUT_LINE('QUERY REMOTE DATA');    END IF;
+    END LOOP;    CLOSE remote_db_query;  END query_remote_data;  PROCEDURE obtain_new_record_list IS    BEGIN      --statements go here
+      DBMS_OUTPUT.PUT_LINE('NEW RECORD LIST');    END obtain_new_record_list;   PROCEDURE obtain_updated_record_list IS    BEGIN      --statements go here
+      DBMS_OUTPUT.PUT_LINE('UPDATED RECORD LIST');    END obtain_updated_record_list;   PROCEDURE sync_local_data IS    BEGIN      --statements go here
+      DBMS_OUTPUT.PUT_LINE('SYNC LOCAL DATA');    END sync_local_data;   PROCEDURE driver IS  BEGIN    query_remote_data;    IF error_flag = TRUE THEN      GOTO error_check;    END IF;        obtain_new_record_list;    IF error_flag = TRUE THEN      GOTO error_check;    END IF;    obtain_updated_record_list;    IF error_flag = TRUE THEN      GOTO error_check;    END IF;    sync_local_data;    -- If any errors were found then roll back all updates    <<error_check>>    DBMS_OUTPUT.PUT_LINE('Checking transaction status');    IF error_flag = TRUE THEN      ROLLBACK;      DBMS_OUTPUT.PUT_LINE('The transaction has been rolled back.');   ELSE      COMMIT;      DBMS_OUTPUT.PUT_LINE('The transaction has been processed.');    END IF;  END driver;END;/

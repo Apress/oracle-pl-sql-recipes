@@ -1,0 +1,1 @@
+CREATE OR REPLACE TRIGGER check_email_addressBEFORE INSERT ON empFOR EACH ROWDECLARE  temp_email		employees.email%TYPE := :new.email;BEGIN  IF INSTR(temp_email,'@') > 0 THEN    temp_email := SUBSTR(:new.email, 0, INSTR(temp_email, '@'));  END IF; :new.email := temp_email;END;/

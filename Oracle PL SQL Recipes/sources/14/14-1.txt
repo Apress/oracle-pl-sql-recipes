@@ -1,0 +1,16 @@
+<Location /DAD_NAME>
+    SetHandler pls_handler
+    Order deny,allow
+    Deny from all
+    Allow from localhost node1.mycompany.com node2.mycompany.com
+    AllowOverride None
+
+    PlsqlDatabaseUsername ORACLE_SCHEMA_NAME
+    PlsqlDatabasePassword PASSWORD
+    PlsqlDatabaseConnectString TNS_ENTRY
+    PlsqlSessionStateManagement StatelessWithResetPackageState
+    PlsqlMaxRequestsPerSession 1000
+    PlsqlFetchBufferSize 128
+    PlsqlCGIEnvironmentList QUERY_STRING
+    PlsqlErrorStyle DebugStyle
+</Location>

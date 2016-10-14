@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION squared (in_num IN NUMBER)    RETURN NUMBER ASBEGIN  RETURN in_num * in_num;END; 

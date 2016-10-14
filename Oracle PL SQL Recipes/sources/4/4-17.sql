@@ -1,0 +1,1 @@
+CREATE OR REPLACE PROCEDURE change_password(username IN VARCHAR2,              new_password IN VARCHAR2) AUTHID CURRENT_USER IS  sql_stmt VARCHAR2(100);BEGIN    sql_stmt := 'ALTER USER ' ||  username || ' IDENTIFIED BY ' || new_password;        EXECUTE IMMEDIATE sql_stmt;END;

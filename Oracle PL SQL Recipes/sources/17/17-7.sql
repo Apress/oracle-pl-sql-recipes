@@ -1,0 +1,1 @@
+exec utPLSQL.testSuite ('My Test Suite', recompile_in=>false);

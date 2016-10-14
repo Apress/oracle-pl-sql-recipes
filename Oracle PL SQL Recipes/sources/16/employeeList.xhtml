@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:h="http://java.sun.com/jsf/html">
+
+    <body>
+
+        <ui:composition template="layout/my_layout.xhtml">
+
+            <ui:define name="body">
+                <f:view id="employeeView">
+                    <h:form id="employeeResults">
+                        <center>
+
+                            <br/>
+                            <h:messages id="messages"
+                                        errorClass="error"
+                                        infoClass="info" />
+                            <br/>
+                            <span class="sub_head_sub">
+                                Employee Listing
+                            </span>
+                            <br/>
+
+                            <rich:separator/>
+
+                            <br/>
+
+                            <h:dataTable id="employeeList"
+                                 rows="20"
+                                 value="#{employeeList}"
+                                 var="emp">
+                        <f:facet name="header">
+                            <h:column >
+                                <h:outputText value="First Name"/>
+                            </h:column>
+                            <h:column >
+                                <h:outputText value="Last Name"/>
+                            </h:column>
+                            <h:column >
+                                <h:outputText value="Email"/>
+                            </h:column>
+                        </f:facet>
+
+                        <h:column id="firstNameCol">
+                            <h:outputText id="firstName" value="#{emp.firstName}"/>
+                        </h:column>
+                        <h:column id="lastNameCol">
+                            <h:outputText id="lastName" value="#{emp.lastName}"/>
+                        </h:column>
+
+                        <h:column id="emailCol">
+                            <h:outputLink value="http://my-oracle-application-server:7778/DAD/emp_rpt.rpt" target="_blank">
+                                <f:param name="emp_id" value="#{emp.employeeId}"/>
+                                <h:outputText id="email" value="#{emp.email}"/>
+                            </h:outputLink>
+                        </h:column>
+
+
+                    </h:dataTable>
+
+
+
+                        </center>
+                    </h:form>
+
+                </f:view>
+
+            </ui:define>
+
+        </ui:composition>
+
+    </body>
+</html>

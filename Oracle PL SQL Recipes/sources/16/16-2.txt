@@ -1,0 +1,10 @@
+// Save this file as EmployeeFacade.java for example 16-2
+
+import java.sql.*;
+import oracle.jdbc.*;
+
+public class EmployeeFacade {
+
+ public void calcQuarterHour(double hours)            throws SQLException {        float returnValue;        int ret_code;        Connection conn = null;        try {            //Load Oracle driver            DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());            //Obtain a connection            conn = DriverManager.getConnection("jdbc:oracle:thin:@hostname:1521:mydb",                    "user", "password");            CallableStatement pstmt =                    conn.prepareCall("{? = call calc_quarter_hour(?)}");                       pstmt.registerOutParameter(1, java.sql.Types.FLOAT);            pstmt.setDouble(2, hours);            pstmt.execute();            returnValue = pstmt.getFloat(1);            pstmt.close();            conn.commit();            conn.close();            System.out.println("The calculated value: " + returnValue);        } catch (SQLException e) {            ret_code = e.getErrorCode();            System.err.println(ret_code + e.getMessage());            conn.close();        } }
+
+ public static void main(String[] args) {        EmployeeFacade facade = new EmployeeFacade();        try {            facade.calcQuarterHour(7.667);        } catch (SQLException e) {            System.err.println("A database exception has occurred.");        }    }}

@@ -1,0 +1,3 @@
+CREATE OR REPLACE TRIGGER ddl_triggerBEFORE CREATE OR ALTER OR DROPON SCHEMADECLARE  evt		VARCHAR2(2000);  v_subject            VARCHAR2(100) := 'Drop table attempt';  v_message	VARCHAR2(1000);BEGIN  SELECT ora_sysevent  INTO evt  FROM dual;  IF evt = 'DROP' THEN   RAISE_APPLICATION_ERROR(-20900, 'UNABLE TO DROP TABLE, ' ||
+           'EVENT HAS BEEN LOGGED');  END IF;  v_message := 'Table drop attempted by: '|| 
+    SYS_CONTEXT('USERENV','SESSION_USERID');  SEND_EMAIL('DBA-GROUP@mycompany.com',              v_subject,             v_message);END;/

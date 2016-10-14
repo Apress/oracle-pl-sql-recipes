@@ -1,0 +1,1 @@
+import groovy.sql.Sqlimport oracle.jdbc.driver.OracleTypesSql sql = Sql.newInstance("jdbc:oracle:thin:@hostname:1521:dbname",                                                  "username","password","oracle.jdbc.driver.OracleDriver")dept_id = 50sql.call('{? = call calc_quarter_hour(?)}', [Sql.DOUBLE, 6.35]) { qtr_hour->  println qtr_hour}

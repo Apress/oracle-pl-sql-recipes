@@ -1,0 +1,1 @@
+CREATE or REPLACE TRIGGER populate_hire_dateBEFORE INSERT    ON employees    FOR EACH ROWDECLAREBEGIN    :new.hire_date := sysdate;END;/

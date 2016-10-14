@@ -1,0 +1,4 @@
+CREATE OR REPLACE FUNCTION calc_billing_date IS
+BEGIN
+  RETURN ADD_MONTHS(sysdate, 6);
+END;

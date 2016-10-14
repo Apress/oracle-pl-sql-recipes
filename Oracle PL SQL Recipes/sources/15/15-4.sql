@@ -1,0 +1,3 @@
+CREATE OR REPLACE PROCEDURE get_it_emps AS LANGUAGE JAVA
+NAME 'Employees.getItEmps()';
+/

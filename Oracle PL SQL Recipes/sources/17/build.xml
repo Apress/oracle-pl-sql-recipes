@@ -1,0 +1,40 @@
+<project name="MyPLSQLProject" default="unitTest" basedir=".">
+    <description>
+        PLSQL Unit Test and Application Builder
+    </description>
+  <!-- set global properties for this build -->
+  <property name="src" location="src"/>
+  <property name="build" value="build" location="build"/>
+  <property name="user" value="jython"/>
+  <property name="db_password" value="django2414"/>
+  <property name="database.jdbc.url" value="jdbc:oracle:thin:@fess-oradbdev:1521:fessdev2"/>
+
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init"
+        description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <!-- This is where you place the code for your java stored procedures -->
+    <javac srcdir="${src}" destdir="${build}"/>
+  </target>
+
+
+
+  <target name="unitTest" depends="compile"
+        description="Execute PLSQL Unit Tests" >
+    <sql
+     driver = "oracle.jdbc.driver.OracleDriver"
+     url = "${database.jdbc.url}"
+     userid = "${user}"
+     password = "${db_password}"
+     print="true"
+    >
+      call utconfig.setfiledir('FILE_SYSTEM');      call utconfig.setreporter('File');      call utplsql.test('calc_quarter_hour');      -- Closes the fle      call utfilereporter.close();      -- Returns output redirection to DBMS_OUTPUT      call utconfig.setreporter('Output');
+    </sql>
+   
+  </target>
+</project>

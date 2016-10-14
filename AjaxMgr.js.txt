@@ -1,0 +1,352 @@
+AjaxMgr.__instance__ = null;
+
+// ********************************************************************
+AjaxMgr.exception = function (message) {
+    this.name	 = "AjaxMgrException";
+    this.message = message;
+};
+    
+AjaxMgr.exception.prototype = new Error;
+
+// ********************************************************************
+
+AjaxMgr.getInstance = function () {
+    
+    if (null == this.__instance__ ) {
+	this.__instance__ = new AjaxMgr();
+    };
+    
+    return this.__instance__;
+};
+    
+// ********************************************************************
+    
+function AjaxMgr () {
+	
+    if (AjaxMgr.caller != AjaxMgr.getInstance) {
+	throw new AjaxMgr.exception ("There is no public contructor for AjaxMgr.\n" +
+				     "Syntax: var myAjaxMgr = AjaxMgr.getInstance();" );
+    };
+    this.openReqCount = 0;
+    this.filler_element_id = 'AJAX_MGR_FILLER_ELEMENT_ID';
+    this.statusMessageBase = 'Ajax callback ';
+};
+
+// ********************************************************************
+
+AjaxMgr.prototype.getOpenReqCount = function () {
+    return this.openReqCount;
+};
+	
+// ********************************************************************
+AjaxMgr.prototype.incrementOpenReqCount = function() {
+    this.openReqCount += 1;
+};
+// ********************************************************************
+AjaxMgr.prototype.decrementOpenReqCount = function() {
+    this.openReqCount -= 1;
+};
+// ********************************************************************
+	
+AjaxMgr.prototype.__createXMLobject__ = function () {
+
+// private method to create the XML object
+// end users should use the callURL method
+    
+    var XMLobject = null;
+    if (window.XMLHttpRequest) {
+	XMLobject = new XMLHttpRequest();
+    } else if (window.ActiveXObject) {
+	XMLobject = new ActiveXObject ("Microsoft.XMLHTTP");
+    };
+    return XMLobject;
+};
+
+// ********************************************************************
+AjaxMgr.prototype.callURL = function(url, callBack, args, method, userArgs) {
+    
+    // Function parameters
+    // 1) - STRING: relative or full URL to call
+    // 2) - Reference: function to call when data is returned
+    // 3) - STRING: Optional URL name/value pairs
+    // 4) - STRING: POST or GET
+    // 5) - any user-defined object to be passed to the user's callback function
+    
+    var theURL      = url;
+    var theCallback = callBack;
+    var theArgs	    = args == undefined ? "" : args;
+    var theMethod;
+    try {
+	theMethod = method == undefined ? "POST" : method.toUpperCase();
+    } catch (e) {
+	theMethod = "garbage";
+    }
+
+    // arg validation:
+    if (theURL == undefined) {
+	throw new AjaxMgr.exception("You must supply a URL.");
+    };
+
+    if (theCallback == undefined) {
+	throw new AjaxMgr.exception("You must supply a callback function.");
+    } else if (typeof(theCallback) != "function") {
+	throw new AjaxMgr.exception("Invalid callback: not a function.");
+    };
+
+    if (theMethod != "POST" && theMethod != "GET") {
+	throw new AjaxMgr.exception("Invalid method (" + method + ").  Method must be POST or GET.");
+    };
+
+    // manipulation of url/args:
+    if (theArgs != "") {
+	var argFirstByte = theArgs.substr (0,1);
+	
+	switch (theMethod) {
+	case "POST" : 
+            if ("?" == argFirstByte) {
+		theArgs = theArgs.substr (1);
+            };
+            break;
+	    
+	case "GET" :
+            if ("?" != argFirstByte) {
+		theArgs = "?" + theArgs;
+            };
+	    theURL = theURL + theArgs;
+	    theArgs = "";
+            break;
+	};
+    };
+
+    // create a new request object:
+    var XMLobject = this.__createXMLobject__();
+    if (XMLobject) {
+	XMLobject.open(theMethod, theURL, true);
+	if ("POST" == theMethod) {
+	    XMLobject.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	};
+
+	XMLobject.onreadystatechange = function() {
+	    // get the ajaxMgr instance that is being used, because right now
+	    //  in the callback function context, "this" is not the ajaxMgr instance!
+	    var this_ajaxMgr = AjaxMgr.getInstance();
+
+	    // status not necessarily assigned to object at all readyStates:
+	    var this_status;
+	    try {
+		this_status = XMLobject.status;
+	    } catch (e) {
+		this_status = undefined;
+	    };
+
+	    // we are only concerned about the final state:
+	    if (4 == XMLobject.readyState) {
+		if (200 == this_status) {
+		    // The ajax call succeeded and received valid data; proceed to call the user's callback function:
+		    try {
+			theCallback (XMLobject, userArgs);
+		    } catch (e) {
+			// Bad user.
+			alert("CODING ERROR: Unhandled Exception in Ajax callback handler:" +
+			      "\nurl = " + url +
+			      "\nargs = " + args +
+			      "\nexception = " + e +
+			      "\nerror message = " + e.message);
+		    };
+		    
+		    // cleanup
+		    this_ajaxMgr.decrementOpenReqCount();
+
+		    // stop cursor spinning if appropriate
+		    if (this_ajaxMgr.openReqCount == 0) {
+			this_ajaxMgr.stop_cursor_spin();
+		    };
+
+		} else {
+		    // The ajax call FAILED.
+		    // Do our cleanup:
+		    this_ajaxMgr.decrementOpenReqCount();
+		    if (this_ajaxMgr.openReqCount == 0) {
+			this_ajaxMgr.stop_cursor_spin();
+		    };
+
+		    // If the status is undefined, it means that the call failed because
+		    //  the user stopped waiting for the page to load and moved to another URL.
+		    // Or so we are going to assume.
+		    // In this case, do NOT give the user an alert -- there is nothing wrong.
+		    if (this_status != undefined) {
+
+			// Throwing an exception or returning a status does no good whatsoever.
+			// The only way to notify the user that a problem occurred is to ALERT.
+			var this_text;
+			try {
+			    this_text = XMLobject.responseText.substring(0, 1024) + "\n...";
+			} catch (e) {
+			    this_text = undefined;
+			};
+			
+			alert("SOMETHING WENT VERY WRONG IN AJAX CALL:" +
+			      "\nurl = " + url +
+			      "\nargs = " + args + 
+			      "\n" +
+			      "\nreadyState = " + XMLobject.readyState +
+			      "\nstatus = " + this_status + 
+			      "\n" + 
+			      "\nresponseText = \n" + this_text);
+		    };
+		};
+	    };
+	};  // end implicit function onreadystatechage
+
+	// increment the open req count:
+	this.incrementOpenReqCount();
+
+	// start the cursor spinning with a status message indicating why (use the bare url passed by user, no args)
+	this.start_cursor_spin(url);
+
+	// make the call
+	XMLobject.send (theArgs);
+    };
+};
+// ********************************************************************
+AjaxMgr.prototype.start_cursor_spin = function(url) {
+    // need to make sure that the entire screen is affected, so that
+    //  any cursor changes show up on the whole page, not just some teeny
+    //  div that may have text at the beginning of the page...
+
+    // do we already have a filler element?
+    var filler_element = document.getElementById(this.filler_element_id);
+    if (! filler_element) {
+	// create a new filler element
+	filler_element = document.createElement('div');
+	filler_element.id = this.filler_element_id;
+	filler_element.style.height = window.screen.availHeight + 'px';
+	filler_element.style.width = '100%';
+// 1	filler_element.style.float = 'bottom';
+	filler_element.style.visibility = 'hidden';
+
+	// append it to the body so that the body is sure to take 
+	//  up the whole screen
+	try {
+	    var body_element = document.getElementsByTagName('body')[0];
+	    body_element.appendChild(filler_element);
+	} catch (e) {
+	    // no body element at this point?  skip it.
+	};
+    };
+
+    // set the body cursor style, now that we know the body fills the page
+    try {
+	var body_element = document.getElementsByTagName('body')[0];
+	body_element.style.cursor = 'wait';
+    } catch (e) {
+	// no body element at this point?  skip it.
+    };
+
+    // set the status message
+    defaultStatus = this.statusMessageBase + url + '...';
+};
+// ********************************************************************
+AjaxMgr.prototype.stop_cursor_spin = function() {
+    // if the defaultStatus message looks like one of ours,
+    // then stop the cursor spin and set a different status message.
+    // BUT, if the defaultStatus message is DIFFERENT, then assume
+    // that some other entity has taken over and does not want us
+    // to change things back.
+    if (String(defaultStatus).search(this.statusMessageBase) <= 0) {
+	try {
+	    var body_element = document.getElementsByTagName('body')[0];
+	    body_element.style.cursor = 'auto';
+	} catch (e) {
+	    // no body element?  skip it.
+	};
+
+	// delete the filler element
+	try {
+	    var filler_element = document.getElementById(this.filler_element_id);
+	    filler_element.parentNode.removeChild(filler_element);
+	} catch (e) {
+	    // no filler element?  skip it.
+	};
+
+	// set the status message
+	defaultStatus = 'Done';
+    };
+};
+// ********************************************************************
+
+AjaxMgr.prototype.getResponseXML= function (XMLobject) {
+
+    // There is a bug in firefox:
+    //  If you have "document.domain" set, you will NOT be able to directly
+    //  access the responseXML (Permission Denied errors).  Stupid Firefox.
+    // So, in Firefox, we need to do it the old fashioned way, by parsing
+    //  the responseText.
+    
+    // So: see if we can read the responseXML:
+    var responseXML = XMLobject.responseXML;
+    try {
+	var dummy = responseXML.getElementsByTagName("dummy");
+	// ok, we can read it, and we just use it as-is.
+
+    } catch (e) {
+	// Ok, now here's another funky thing:
+	//  Ideally, we'd like to check the error to make sure it
+	//  is the permission error from Firefox.  BUT, the Firefox 
+	//  bug includes other things like:
+	//    a) the exception has null name
+	//    b) the exception has null message
+	//    c) the exception is NOT derived from one of the "well-known"
+	//       exception types 
+	//  What's left?  String parsing to look for "Permission denied."
+	//  Except that this only works for people using English and normal
+	//   fonts in their browser -- chinese glyphs will NOT match on
+	//   "Permission denied" strings, for example.  Sigh.
+	//  So, just go forth and ASSUME that we're handling the Firefox
+	//   permission bug.  And hope for the best.
+
+	var responseText = XMLobject.responseText;
+	var parser = null;
+
+	try {
+	    // can we get a parser?  Not in IE, at least not so far as I know...
+	    parser = new DOMParser();
+	} catch (another_e) {
+	    // Now what?!  We cannot get a parser! Ouch!
+	    alert("ABORT: Your browser is not letting us read XML responses from the server." +
+		  "\nWe tried using a workaround for Firefox, but it is not working either." +
+		  "\nPlease report this to ids-group@fnal.gov; include your browser version." +
+		  "\nThank you in advance for your help in debugging this situation.");
+	};
+
+	if (parser != null) {
+	    responseXML = parser.parseFromString(responseText, "text/xml");
+	};
+    };
+
+    // NB: originally I tried to set the XMLobject.responseXML to the new responseXML
+    //     that we just parsed, but by the time you get back to the user's callback
+    //     function, the permission error reappears.  So user will have to call this
+    //     routine -- not quite as transparent as hoped...
+
+    // return the useable responseXML:
+    return responseXML;
+};
+// ********************************************************************
+// utility function for building a simple arg list:
+// converting data to '?arg1=value1&arg2=value2' syntax
+//  with proper quoting, etc.
+AjaxMgr.prototype.make_arg_string = function(arg_name_list, arg_value_list) {
+    // build using an array for performance:
+    var arg_string_array = new Array();
+    for (var i=0; i < arg_name_list.length; i++) {
+	var this_arg_name = arg_name_list[i];
+	var this_arg_value = (arg_value_list[i] == undefined) ? '' : arg_value_list[i];
+	arg_string_array.push(this_arg_name + '=' + FDU.escape(this_arg_value));
+    };
+    
+    // join the array elements and return
+    var arg_string = '?' + arg_string_array.join('&');
+    return arg_string;
+};
+// ********************************************************************
